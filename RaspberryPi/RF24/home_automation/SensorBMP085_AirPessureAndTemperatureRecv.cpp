@@ -1,26 +1,15 @@
-/*
- Copyright (C) 2011 J. Coliz <maniacbug@ymail.com>
-
- This program is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- version 2 as published by the Free Software Foundation.
-
- 03/17/2013 : Charles-Henri Hallard (http://hallard.me)
-              Modified to use with Arduipi board http://hallard.me/arduipi
-						  Changed to use modified bcm2835 and RF24 library
-TMRh20 2014 - Updated to work with optimized RF24 Arduino library
-
- */
-
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <time.h>
+#include <stdio.h>
+#include <iomanip>
+
 #include <RF24/RF24.h>
 #include <sqlite3.h>
-
 
 #define LOAD_SIZE_1_IDX 0
 #define LOAD_SIZE_2_IDX 1
@@ -37,7 +26,6 @@ using namespace std;
 
 //RPi Revision 1 mit CE an Pin 22
 RF24 radio(RPI_GPIO_P1_22 /* je nachdem welcher GPIO verdrahtet wurde */, RPI_GPIO_P1_24 /* identisch zu RPi Rev 2 */, BCM2835_SPI_SPEED_8MHZ);
-//RF24 radio(RPI_GPIO_P1_22 /* je nachdem welcher GPIO verdrahtet wurde */, RPI_GPIO_P1_24 /* identisch zu RPi Rev 2 */, BCM2835_SPI_SPEED_1MHZ);
 
 // Radio pipe addresses for the 2 nodes to communicate.
 const uint8_t pipes[][6] = {"1Node","2Node"};
@@ -90,7 +78,27 @@ private:
   sqlite3 * m_db;
 };
 
-void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize)
+std::string GetCurrentTime()
+{
+  time_t t;
+  struct tm *ts;
+
+  t = time(NULL);
+  ts = localtime(&t);
+
+  stringstream ss;
+
+  ss  << ts->tm_year + 1900;
+  ss << "-" << setfill('0') << setw(2) << ts->tm_mon + 1;
+  ss << "-" << setfill('0') << setw(2) << ts->tm_mday;
+  ss << " " << setfill('0') << setw(2) << ts->tm_hour;
+  ss << ":" << setfill('0') << setw(2) << ts->tm_min;
+  ss << ":" << setfill('0') << setw(2) << ts->tm_sec;
+
+  return ss.str();
+}
+
+void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & sqliteDb)
 {
   printf("Receiced %d bytes from \'BMP 180\' air pressure and temperature sensor.\n", bufSize);
   uint32_t pressure;
@@ -108,7 +116,15 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize)
   temperature = ntohl(temperature);
 
   printf("Received pressure    = %.2f mb.\n", (pressure / 1000.) );
-  printf("Received temperature = %.2f °C.\n", (temperature / 1000.) );
+  const float temperatureInCelsius = temperature / 1000.;
+  printf("Received temperature = %.2f °C.\n", temperatureInCelsius );
+
+  stringstream ss;
+  ss << "insert into wheathers (timestamp, temperature, pressure) values (\"" << GetCurrentTime()<< "\", " 
+     << temperatureInCelsius 
+     << ", 995.13);";
+  
+  sqliteDb.Execute(ss.str().c_str());
 }
 
 int main(int argc, char** argv){
@@ -122,7 +138,6 @@ int main(int argc, char** argv){
     return -1;
   }
 
-  sqliteDb.Execute("insert into wheathers (timestamp, temperature, pressure) values (\"2016-03-13 13:28:46\", 18.4, 995.13);");
 
   // Setup and configure rf radio
   radio.begin();
@@ -167,7 +182,7 @@ int main(int argc, char** argv){
 	switch(sensorType)
 	{
 		case SENSOR_TYPE_BMP_180_PRESSURE_AND_TEMPERATURE:
-		  parseSensorTypeBmp180Data(&buf[headerSize], sensorDataSize);
+		  parseSensorTypeBmp180Data(&buf[headerSize], sensorDataSize, sqliteDb);
 		  break;
 		default:
 		  printf("Unknown sensor type.\n");
