@@ -19,6 +19,7 @@ TMRh20 2014 - Updated to work with optimized RF24 Arduino library
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <RF24/RF24.h>
+#include <sqlite3.h>
 
 
 #define LOAD_SIZE_1_IDX 0
@@ -27,6 +28,8 @@ TMRh20 2014 - Updated to work with optimized RF24 Arduino library
 #define SENSOR_ID_IDX   3
 
 #define SENSOR_TYPE_BMP_180_PRESSURE_AND_TEMPERATURE 10
+
+#define SQLITE_FILE_NAME "/home/pi/Data/Rails/blog/db/development.sqlite3"
 
 using namespace std;
 
@@ -40,6 +43,52 @@ RF24 radio(RPI_GPIO_P1_22 /* je nachdem welcher GPIO verdrahtet wurde */, RPI_GP
 const uint8_t pipes[][6] = {"1Node","2Node"};
 
 static const uint8_t MAX_BUF_SIZE = 255;
+
+//! Callback for SQLiteDb
+static int callback(void *NotUsed, int argc, char **argv, char **azColName){
+  int i;
+  for(i=0; i<argc; i++){
+    printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+  }
+  printf("\n");
+  return 0;
+}
+
+/*!
+* SQLite 3 wrapper
+**/
+class SQLiteDb
+{
+public:
+
+  SQLiteDb() : m_db(NULL) {}
+
+  ~SQLiteDb() { if (NULL != m_db) { sqlite3_close(m_db); } }
+  
+  int Open(const char * fileName) 
+  {
+    const int ret = sqlite3_open(fileName, &m_db);
+    if (ret) { sqlite3_close(m_db);  m_db=NULL; }
+    return ret;
+  }
+
+  int Execute(const char * cmd)
+  {
+    char * errMsg = NULL;
+    if (NULL == m_db) { return -1; }
+    const int ret = sqlite3_exec(m_db, cmd, callback, 0, &errMsg);
+    if ( ret != SQLITE_OK)
+    {
+      fprintf(stderr, "SQL error: %s.\n", errMsg);
+      sqlite3_free(errMsg);
+    }
+    return ret;
+  }
+
+protected:
+private:
+  sqlite3 * m_db;
+};
 
 void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize)
 {
@@ -64,7 +113,16 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize)
 
 int main(int argc, char** argv){
 
-  printf("RF24/examples/pong_back\n");
+  printf("Start sensor data receiver.\n");
+
+  SQLiteDb sqliteDb;
+  if ( sqliteDb.Open(SQLITE_FILE_NAME) ) 
+  {
+    printf("Error opening database file \"%s\"\n", SQLITE_FILE_NAME);
+    return -1;
+  }
+
+  sqliteDb.Execute("insert into wheathers (timestamp, temperature, pressure) values (\"2016-03-13 13:28:46\", 18.4, 995.13);");
 
   // Setup and configure rf radio
   radio.begin();
@@ -84,17 +142,6 @@ int main(int argc, char** argv){
   {
     if ( radio.available() )
     {
-#if 0
-	// Dump the payloads until we've gotten everything
-	unsigned long data;
-	//while(radio.available())
-	// Fetch the payload, and see if this was the last one.
-	radio.read( &data, sizeof(unsigned long) );
-	// Spew it
-	printf("Got payload(%d) %lu...\n",sizeof(unsigned long), data);
-	printf("relative (sea level) pressure = %.2f mb.\n", data / 1000.);
-
-#else
         uint8_t buf[MAX_BUF_SIZE];
 	memset(&buf[0], 0, MAX_BUF_SIZE);
 	radio.read(&buf[0], MAX_BUF_SIZE);
@@ -126,11 +173,9 @@ int main(int argc, char** argv){
 		  printf("Unknown sensor type.\n");
 		  break;
 	}
-#endif
 	//delay(100);//nicht besser
 	delay(925); //Delay after payload responded to, minimize RPi CPU time
     }
-
   } // forever loop
   return 0;
 }

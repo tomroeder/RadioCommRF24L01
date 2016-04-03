@@ -18,13 +18,13 @@ CCFLAGS=-Ofast -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jzf-s
 #CCFLAGS=
 
 # define all programs
-PROGRAMS = MyPingRPi MyPongRPi SensorBMP085_AirPessureAndTemperatureRecv
+PROGRAMS = SensorBMP085_AirPessureAndTemperatureRecv
 SOURCES = ${PROGRAMS:=.cpp}
 
 all: ${PROGRAMS}
 
 ${PROGRAMS}: ${SOURCES}
-	g++ ${CCFLAGS} -Wall -I../ -lrf24-bcm $@.cpp -o $@
+	g++ ${CCFLAGS} -Wall -I../ -lrf24-bcm -lsqlite3 $@.cpp -o $@
 
 clean:
 	rm -rf $(PROGRAMS)
