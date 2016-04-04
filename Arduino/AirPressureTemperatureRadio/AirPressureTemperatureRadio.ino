@@ -232,6 +232,10 @@ void loop()
           
           unsigned long pressureMul_1000 = p0*1000.0+.5;
           sendValue(pressureMul_1000, (T*1000.0) /*todo test for pos and neg values */);
+          
+          Serial.println("Start sleep\n");
+          delay(10 * 60 * 1000);  // Pause for n seconds.
+          Serial.println("End sleep\n");
         }
         else Serial.println("error retrieving pressure measurement\n");
       }
@@ -241,6 +245,5 @@ void loop()
   }
   else Serial.println("error starting temperature measurement\n");
 
-  static const int ONE_SCECOND = 1000;
-  delay(10*60*ONE_SCECOND);  // Pause for n seconds.
+  delay(5000);  // Pause for n seconds.
 }
