@@ -233,9 +233,7 @@ void loop()
           unsigned long pressureMul_1000 = p0*1000.0+.5;
           sendValue(pressureMul_1000, (T*1000.0) /*todo test for pos and neg values */);
           
-          Serial.println("Start sleep\n");
           delay(10L * 60L * 1000L);  // Pause for n seconds.
-          Serial.println("End sleep\n");
         }
         else Serial.println("error retrieving pressure measurement\n");
       }
