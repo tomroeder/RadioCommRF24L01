@@ -241,5 +241,6 @@ void loop()
   }
   else Serial.println("error starting temperature measurement\n");
 
-  delay(5000);  // Pause for 5 seconds.
+  static const int ONE_SCECOND = 1000;
+  delay(10*60*ONE_SCECOND);  // Pause for 5 seconds.
 }
