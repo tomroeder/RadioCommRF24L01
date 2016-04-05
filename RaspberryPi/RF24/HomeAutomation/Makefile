@@ -18,7 +18,7 @@ CCFLAGS=-Ofast -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jzf-s
 #CCFLAGS=
 
 # define all programs
-PROGRAMS = SensorBMP085_AirPessureAndTemperatureRecv
+PROGRAMS = homesensord
 SOURCES = ${PROGRAMS:=.cpp}
 
 all: ${PROGRAMS}

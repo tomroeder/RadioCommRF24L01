@@ -11,6 +11,18 @@
 #include <RF24/RF24.h>
 #include <sqlite3.h>
 
+// -- Daemon --
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <syslog.h>
+#include <string.h>
+// --
+
 #define LOAD_SIZE_1_IDX 0
 #define LOAD_SIZE_2_IDX 1
 #define SENSOR_TYPE_IDX 2
@@ -127,9 +139,55 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & 
   sqliteDb.Execute(ss.str().c_str());
 }
 
-int main(int argc, char** argv){
+//we want to run as service
+void daemonize() {
+  /* Our process ID and Session ID */
+    pid_t pid, sid;
+    
+    /* Fork off the parent process */
+    pid = fork();
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
+    /* If we got a good PID, then
+       we can exit the parent process. */
+    if (pid > 0) {
+            exit(EXIT_SUCCESS);
+    }
 
-  printf("Start sensor data receiver.\n");
+    /* Change the file mode mask */
+    umask(0);
+                
+    /* Open any logs here */        
+                
+    /* Create a new SID for the child process */
+    sid = setsid();
+    if (sid < 0) {
+        /* Log the failure */
+        exit(EXIT_FAILURE);
+    }
+        
+    /* Change the current working directory */
+    if ((chdir("/")) < 0) {
+        /* Log the failure */
+        exit(EXIT_FAILURE);
+    }
+        
+    /* Close out the standard file descriptors */
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+        
+    /* Daemon-specific initialization goes here */
+
+}
+
+int main(int argc, char** argv){
+ 
+  daemonize();//we want to run as service
+  openlog ( "homesensord", LOG_PID | LOG_CONS| LOG_NDELAY, LOG_USER);
+  syslog( LOG_NOTICE, "Start sensor data receiver daemon.\n");
+  //printf("Start sensor data receiver.\n");
 
   SQLiteDb sqliteDb;
   if ( sqliteDb.Open(SQLITE_FILE_NAME) ) 
