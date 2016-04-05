@@ -117,7 +117,7 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & 
 
   printf("Received pressure    = %.2f mb.\n", (pressure / 1000.) );
   const float temperatureInCelsius = temperature / 1000.;
-  printf("Received temperature = %.2f °C.\n", temperatureInCelsius );
+  printf("%s : received temperature = %.2f °C.\n", GetCurrentTime().c_str(), temperatureInCelsius );
 
   stringstream ss;
   ss << "insert into wheathers (timestamp, temperature, pressure) values (\"" << GetCurrentTime()<< "\", " 
