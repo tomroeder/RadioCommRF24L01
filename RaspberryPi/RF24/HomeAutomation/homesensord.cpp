@@ -112,7 +112,7 @@ std::string GetCurrentTime()
 
 void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & sqliteDb)
 {
-  printf("Receiced %d bytes from \'BMP 180\' air pressure and temperature sensor.\n", bufSize);
+  syslog( LOG_NOTICE, "Receiced %d bytes from \'BMP 180\' air pressure and temperature sensor.\n", bufSize);
   uint32_t pressure;
   uint32_t temperature;
 
@@ -129,7 +129,7 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & 
 
   printf("Received pressure    = %.2f mb.\n", (pressure / 1000.) );
   const float temperatureInCelsius = temperature / 1000.;
-  printf("%s : received temperature = %.2f °C.\n", GetCurrentTime().c_str(), temperatureInCelsius );
+  syslog( LOG_NOTICE, "%s : received temperature = %.2f °C.\n", GetCurrentTime().c_str(), temperatureInCelsius );
 
   stringstream ss;
   ss << "insert into wheathers (timestamp, temperature, pressure) values (\"" << GetCurrentTime()<< "\", " 
@@ -184,15 +184,14 @@ void daemonize() {
 
 int main(int argc, char** argv){
  
-  daemonize();//we want to run as service
+  //daemonize();//we want to run as service
   openlog ( "homesensord", LOG_PID | LOG_CONS| LOG_NDELAY, LOG_USER);
-  syslog( LOG_NOTICE, "Start sensor data receiver daemon.\n");
-  //printf("Start sensor data receiver.\n");
+  syslog( LOG_NOTICE, "Start sensor data receiver daemon.");
 
   SQLiteDb sqliteDb;
   if ( sqliteDb.Open(SQLITE_FILE_NAME) ) 
   {
-    printf("Error opening database file \"%s\"\n", SQLITE_FILE_NAME);
+    syslog( LOG_NOTICE, "Error opening database file \"%s\".", SQLITE_FILE_NAME);
     return -1;
   }
 
