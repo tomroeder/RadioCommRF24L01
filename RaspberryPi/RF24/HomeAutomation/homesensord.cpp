@@ -210,6 +210,10 @@ int main(int argc, char** argv){
 	//delay(100);//nicht besser
 	delay(925); //Delay after payload responded to, minimize RPi CPU time
     }
+    else
+    {
+	delay(925); //Delay after payload responded to, minimize RPi CPU time
+    }
   } // forever loop
   return 0;
 }
