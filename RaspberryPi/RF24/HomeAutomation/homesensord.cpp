@@ -125,14 +125,14 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & 
   pressure = ntohl(pressure);
   temperature = ntohl(temperature);
 
-  syslog( LOG_NOTICE, "Received pressure    = %.2f mb.\n", (pressure / 1000.) );
   const float temperatureInCelsius = temperature / 1000.;
-  syslog( LOG_NOTICE, "%s : received temperature = %.2f °C.\n", GetCurrentTime().c_str(), temperatureInCelsius );
+  const float pressureIn_mb = pressure / 1000.;
+
+  syslog( LOG_NOTICE, "%s : received temperature = %.2f °C, pressure = %.2f mb.\n", GetCurrentTime().c_str(), temperatureInCelsius, pressureIn_mb );
 
   stringstream ss;
-  ss << "insert into wheathers (timestamp, temperature, pressure) values (\"" << GetCurrentTime()<< "\", " 
-     << temperatureInCelsius 
-     << ", 995.13);";
+  ss << "insert into wheathers (timestamp, temperature, pressure) values (\"" 
+     << GetCurrentTime()<< "\", " << temperatureInCelsius << ", " << pressureIn_mb << ");";
   
   sqliteDb.Execute(ss.str().c_str());
 }
