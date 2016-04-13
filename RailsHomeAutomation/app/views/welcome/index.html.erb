@@ -41,12 +41,12 @@ $(function () {
             name: 'Innentemperatur',
             pointInterval: <%= 1.day * 1000 %>,
             pointStart: <%= 3.weeks.ago.at_midnight.to_i * 1000 %>,
-            data: <%= WheathersController.get_temperature() %>
+            data: <%= SensorsController.get_temperature() %>
         }, {
             name: 'Luftdruck',
             pointInterval: <%= 1.day * 1000 %>,
             pointStart: <%= 3.weeks.ago.at_midnight.to_i * 1000 %>,
-            data: <%= WheathersController.get_pressure() %>
+            data: <%= SensorsController.get_pressure() %>
         }
      ]
     });
