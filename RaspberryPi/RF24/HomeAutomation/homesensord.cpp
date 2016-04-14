@@ -131,7 +131,7 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & 
   syslog( LOG_NOTICE, "%s : received temperature = %.2f °C, pressure = %.2f mb.\n", GetCurrentTime().c_str(), temperatureInCelsius, pressureIn_mb );
 
   stringstream ss;
-  ss << "insert into wheathers (timestamp, temperature, pressure) values (\"" 
+  ss << "insert into sensors (timestamp, temperature, pressure) values (\"" 
      << GetCurrentTime()<< "\", " << temperatureInCelsius << ", " << pressureIn_mb << ");";
   
   sqliteDb.Execute(ss.str().c_str());
