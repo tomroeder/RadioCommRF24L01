@@ -7,8 +7,10 @@
 <script>
 $(function () {
     $('#container').highcharts({
+        //chart: { type: 'spline' },
+
         chart: {
-            type: 'spline'
+            zoomType: 'xy'
         },
 
         title: { text: 'Temperatur und Luftdruck', x: -20 //center
@@ -18,39 +20,90 @@ $(function () {
             x: -20
         },
         xAxis: { type: 'datetime' },
-        yAxis: {
-            title: {
+
+        // --- begin yAxis ---
+        yAxis: [{ //primary axis
+            
+          labels: {
+                format: '{value}°C',
+                style: {
+                    color: Highcharts.getOptions().colors[1]
+                }
+          },
+          title: {
                 text: 'Temperatur (°C)'
+            
+        }} , { //secondaty axis
+            title: {
+                text: 'Druck (mb)'
             },
             plotLines: [{
                 value: 0,
                 width: 1,
                 color: '#808080'
-            }]
-        },
+            }],
+
+            labels: {
+                format: '{value} mb',
+                style: {
+                    color: Highcharts.getOptions().colors[0]
+                }
+            },
+
+           opposite : true
+        }],
+        // --- end yAxis ---
+
         tooltip: {
-            valueSuffix: '°C'
+            shared: true
         },
+
         legend: {
             layout: 'vertical',
-            align: 'right',
-            verticalAlign: 'middle',
-            borderWidth: 0
+            align: 'left',
+            x: 120,
+            verticalAlign: 'top',
+            y: 100,
+            floating: true,
+            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
         },
-        series: [{
+
+        //legend: {
+        //    layout: 'vertical',
+        //    align: 'right',
+        //    verticalAlign: 'middle',
+        //    borderWidth: 0
+        //},
+
+
+        // --- begin series ---
+        series: [
+        {
+            name: 'Luftdruck',
+            //type: 'column',
+            yAxis: 1,
+            pointInterval: <%= 1.day * 1000 %>,
+            pointStart: <%= 3.weeks.ago.at_midnight.to_i * 1000 %>,
+            data: <%= SensorsController.get_pressure() %>,
+            tooltip: {
+                valueSuffix: ' mb'
+            }
+        }
+
+        ,
+        {
             name: 'Innentemperatur',
             pointInterval: <%= 1.day * 1000 %>,
             pointStart: <%= 3.weeks.ago.at_midnight.to_i * 1000 %>,
-            data: <%= SensorsController.get_temperature() %>
-        }, {
-            name: 'Luftdruck',
-            pointInterval: <%= 1.day * 1000 %>,
-            pointStart: <%= 3.weeks.ago.at_midnight.to_i * 1000 %>,
-            data: <%= SensorsController.get_pressure() %>
+            data: <%= SensorsController.get_temperature() %>,
+            tooltip: {
+                valueSuffix: ' °C'
+            }
         }
+     
      ]
+     // --- end series ---
     });
-
 });</script>
 
 <!-- http://stackoverflow.com/questions/13148888/how-to-get-the-current-time-as-13-digit-integer-in-ruby -->
