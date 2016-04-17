@@ -33,7 +33,9 @@ $(function () {
             title: {
                 text: 'Druck (mb)'
             },
-            min : 1000,
+            tickInterval: 0.1, // ? without this, setting of max of y axis does strange things
+            min : <%= SensorsController.get_minmax_middle_pressure() %> - 10, //[mb]
+            max : <%= SensorsController.get_minmax_middle_pressure() %> + 10, //[mb]
             maxPadding:0,
             labels: {
                 format: '{value} mb',
