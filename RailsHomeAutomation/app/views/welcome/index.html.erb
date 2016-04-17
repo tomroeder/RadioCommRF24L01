@@ -13,7 +13,7 @@ $(function () {
 
         title: { text: 'Temperatur und Luftdruck', x: -20 //center
         },
-        // subtitle: { text: 'http://railscasts.com/episodes/223-charts?view=asciicast', x: -20  },
+        subtitle: { text: <%= SensorsController.get_last_time() %>  + ' ' + <%= SensorsController.get_last_temperature() %> + ' °C', x: -20  },
         xAxis: { type: 'datetime' },
 
         // --- begin yAxis ---
@@ -49,23 +49,16 @@ $(function () {
             shared: true
         },
 
-        //legend: {
-        //    layout: 'vertical',
-        //    align: 'left',
-        //    x: 120,
-        //    verticalAlign: 'top',
-        //    y: 100,
-        //    floating: true,
-        //    backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
-        //},
-
+        //Legende für die Datenserien links in das Diagramm zeichnen
         legend: {
             layout: 'vertical',
-            align: 'right',
-            verticalAlign: 'middle',
-            borderWidth: 0
+            align: 'left',
+            x: 120,
+            verticalAlign: 'top',
+            y: 100,
+            floating: true,
+            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
         },
-
 
         // --- begin series ---
         series: [
