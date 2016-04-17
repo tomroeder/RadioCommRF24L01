@@ -13,7 +13,7 @@ $(function () {
 
         title: { text: 'Temperatur und Luftdruck', x: -20 //center
         },
-        subtitle: { text: <%= SensorsController.get_last_time() %>  + ' ' + <%= SensorsController.get_last_temperature() %> + ' °C', x: -20  },
+        subtitle: { text: <%= SensorsController.get_last_temperature() %> + ' °C - ' + <%= SensorsController.get_last_pressure() %> + ' mb' , x: -20  },
         xAxis: { type: 'datetime' },
 
         // --- begin yAxis ---
