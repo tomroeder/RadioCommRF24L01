@@ -5,7 +5,8 @@ class SensorsController < ApplicationController
   # to_s - convert to string
   def self.get_temperature()
     s = "[ "
-    Sensor.all.each do |w|
+    Sensor.where(["timestamp > ?", (Time.now - 5.day)]).each do |w|
+    # Sensor.all.each do |w|
       s = s + " [" + w.timestamp.to_datetime.strftime('%Q').to_s +  ", " + w.temperature.round(1).to_s + "] ,"
     end
     s = s + " ]"
@@ -39,9 +40,26 @@ class SensorsController < ApplicationController
   # this format is understood by highcharts.
   # round(1) - round to precision 1 after .
   # to_s - convert to string
+  #def self.get_pressure_old()
+#    s = "[ "
+#    Sensor.all.each do |w|
+#      s = s + " [" + w.timestamp.to_datetime.strftime('%Q').to_s +  ", " + w.pressure.round(1).to_s + "] ,"
+#    end
+#    s = s + " ]"
+#    return s
+ # end
+
+
+  # Iterate through all elements in db an convert to string in format of javascript array [ [time1, value1], [time2, value2], time3, value3] ]
+  # this format is understood by highcharts.
+  # round(1) - round to precision 1 after .
+  # to_s - convert to string
+  # Return only data from the last 5 days
   def self.get_pressure()
     s = "[ "
-    Sensor.all.each do |w|
+    Sensor.where(["timestamp > ?", (Time.now - 5.day)]).each do |w|
+      # Sensor.where(timestamp: (Time.now.midnight - 2.day)..Time.now.midnight).each do |w|
+      # Sensor.last(100).each do |w|
       s = s + " [" + w.timestamp.to_datetime.strftime('%Q').to_s +  ", " + w.pressure.round(1).to_s + "] ,"
     end
     s = s + " ]"
