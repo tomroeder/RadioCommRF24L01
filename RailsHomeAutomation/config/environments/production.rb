@@ -23,8 +23,8 @@ RailsHomeAutomation::Application.configure do
   # config.serve_static_assets = false
 
   #true fuer lokale server, false für developer mode
-  config.serve_static_assets = true
-  # config.serve_static_assets = false
+  # config.serve_static_assets = true
+  config.serve_static_assets = false
 
   # Compress JavaScripts and CSS.
   config.assets.js_compressor = :uglifier

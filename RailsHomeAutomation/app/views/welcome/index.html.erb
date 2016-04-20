@@ -4,6 +4,7 @@
 
 <script>
 $(function () {
+    var currentTime = new Date();
     $('#container').highcharts({
         //chart: { type: 'spline' },
 
@@ -14,7 +15,23 @@ $(function () {
         title: { text: 'Temperatur und Luftdruck', x: -20 //center
         },
         subtitle: { text: <%= SensorsController.get_last_temperature() %> + ' °C - ' + <%= SensorsController.get_last_pressure() %> + ' mb' , x: -20  },
-        xAxis: { type: 'datetime' },
+        xAxis: { 
+          type: 'datetime',
+
+          // in javascript months start from 0 !
+          plotBands: [
+            { // visualize one day
+                from: Date.UTC(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate() - 1, 0, 0, 0),
+                to: Date.UTC(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 0, 0, 0),
+                color: 'rgba(170, 170, 170, .2)'
+                // color: 'rgba(68, 170, 213, .2)'
+            } , 
+            { // visualize one day
+                from: Date.UTC(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate() - 3, 0, 0, 0),
+                to: Date.UTC(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate() -2, 0, 0, 0),
+                color: 'rgba(170, 170, 170, .2)'
+            }]
+        },
 
         // --- begin yAxis ---
         yAxis: [{ //primary axis
@@ -34,8 +51,8 @@ $(function () {
                 text: 'Druck (mb)'
             },
             tickInterval: 0.1, // ? without this, setting of max of y axis does strange things
-            min : <%= SensorsController.get_minmax_middle_pressure() %> - 10, //[mb]
-            max : <%= SensorsController.get_minmax_middle_pressure() %> + 10, //[mb]
+            min : <%= SensorsController.get_minmax_middle_pressure() %> - 15, //[mb]
+            max : <%= SensorsController.get_minmax_middle_pressure() %> + 15, //[mb]
             maxPadding:0,
             labels: {
                 format: '{value} mb',
