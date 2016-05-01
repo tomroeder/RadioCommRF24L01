@@ -30,8 +30,10 @@ class SensorsController < ApplicationController
 
   # return the pressure value in the middle between min and max. 
   def self.get_minmax_middle_pressure()
-    minPressure = Sensor.minimum("pressure")
-    maxPressure = Sensor.maximum("pressure")
+    #minPressure = Sensor.minimum("pressure")
+    #maxPressure = Sensor.maximum("pressure")
+    minPressure = Sensor.where(["timestamp>?", (Time.now-3.day)]).minimum("pressure")
+    maxPressure = Sensor.where(["timestamp>?", (Time.now-3.day)]).maximum("pressure")
     d = maxPressure-minPressure
     return minPressure +d/2
   end
@@ -53,4 +55,25 @@ class SensorsController < ApplicationController
     return s
   end
 
+  # Iterate through all elements in db an convert to string in format of javascript array [ [time1, value1], [time2, value2], time3, value3] ]
+  # this format is understood by highcharts.
+  # round(1) - round to precision 1 after .
+  # to_s - convert to string
+  # Return only data from the last day
+  def self.get_pressure_nowminus1day()
+    s = "[ "
+     Sensor.where(["timestamp > ?", (Time.now - 1.day)]).each do |w|
+      s = s + " [" + w.timestamp.to_datetime.strftime('%Q').to_s +  ", " + w.pressure.round(1).to_s + "] ,"
+    end
+     s = s + " ]"
+    return s
+  end
+
+ # return the pressure value in the middle between min and max. 
+  def self.get_minmax_middle_pressure_nowminus1day()
+    minPressure = Sensor.where(["timestamp>?", (Time.now-1.day)]).minimum("pressure")
+    maxPressure = Sensor.where(["timestamp>?", (Time.now-1.day)]).maximum("pressure")
+    d = maxPressure-minPressure
+    return minPressure +d/2
+  end
 end

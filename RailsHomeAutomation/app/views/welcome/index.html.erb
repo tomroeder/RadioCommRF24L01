@@ -106,5 +106,90 @@ $(function () {
     });
 });</script>
 
+
+<!-- 2. Diagramm ------------------------------------------------------------------------------------------ -->
+<br>
+<br>
+<div id="containerAirPressure" style="width:650px; height:650px;"></div>
+
+<script>
+$(function () {
+    var currentTime = new Date();
+    $('#containerAirPressure').highcharts({
+
+        chart: {
+            zoomType: 'xy'
+        },
+
+        title: { text: 'Luftdruck', x: -20 //center
+        },
+        subtitle: { text: <%= SensorsController.get_last_pressure() %> + ' mb' , x: -20  },
+        xAxis: { 
+          type: 'datetime',
+
+          // in javascript months start from 0 !
+          plotBands: [
+            { // visualize one day
+                from: Date.UTC(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate() - 1, 0, 0, 0),
+                to: Date.UTC(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), 0, 0, 0),
+                color: 'rgba(170, 170, 170, .2)'
+            } , 
+            { // visualize one day
+                from: Date.UTC(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate() - 3, 0, 0, 0),
+                to: Date.UTC(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate() -2, 0, 0, 0),
+                color: 'rgba(170, 170, 170, .2)'
+            }]
+        },
+
+        // --- begin yAxis ---
+        yAxis: [{ 
+            title: {
+                text: 'Druck (mb)'
+            },
+            min : <%= SensorsController.get_minmax_middle_pressure_nowminus1day() %> - 8, //15[mb]
+            max : <%= SensorsController.get_minmax_middle_pressure_nowminus1day() %> + 8, //15[mb]
+            maxPadding:0,
+            labels: {
+                format: '{value} mb',
+                style: {
+                    color: Highcharts.getOptions().colors[0]
+                }
+            }
+        }],
+        // --- end yAxis ---
+
+        tooltip: {
+            //shared: true
+        },
+
+        //Legende für die Datenserien links in das Diagramm zeichnen
+        legend: {
+            layout: 'vertical',
+            align: 'left',
+            x: 120,
+            verticalAlign: 'top',
+            y: 100,
+            floating: true,
+            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
+        },
+
+        // --- begin series ---
+        series: [
+        {
+            name: 'Luftdruck',
+            type: 'area',
+            yAxis: 0,
+            pointInterval: <%= 1.day * 1000 %>,
+            pointStart: <%= 3.weeks.ago.at_midnight.to_i * 1000 %>,
+            data: <%= SensorsController.get_pressure_nowminus1day() %>,
+            tooltip: {
+                valueSuffix: ' mb'
+            }
+        }]
+     // --- end series ---
+    });
+});</script>
+
+
 <!-- http://stackoverflow.com/questions/13148888/how-to-get-the-current-time-as-13-digit-integer-in-ruby -->
 <!-- http://www.jacoulter.com/2012/01/02/rails-highcharts-with-irregular-time-intervals/ -->
