@@ -37,8 +37,8 @@ $(function () {
         yAxis: [{ //primary axis
             
           maxPadding:0,
-          min : 10, // [°C]
-          max : 30, // [°C]
+          min : -20, // [°C]
+          max : 40, // [°C]
           labels: {
                 format: '{value}°C',
                 style: {
@@ -92,7 +92,7 @@ $(function () {
                 valueSuffix: ' mb'
             }
         }, {
-            name: 'Innentemperatur',
+            name: 'Temperatur',
             type: 'spline',
             yAxis: 0,
             pointInterval: <%= 1.day * 1000 %>,
