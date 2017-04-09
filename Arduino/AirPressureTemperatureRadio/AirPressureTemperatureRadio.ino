@@ -63,8 +63,20 @@ V1.1.2 Updates for Arduino 1.6.4 5/2015
 #include <SPI.h>
 #include "nRF24L01.h"
 #include "RF24.h"
+#include "LowPower.h"//Lib Low-Power Version 1.6.0 by Rocket Scream Electronics. Sketch | Bibliothek einbinden | Bibliothek verwalten
 
-#include <util.h>//ntohl
+#define USE_LOW_POWER_LIB   
+#define PORT_ARDUINO_PRO_MINI_LED 13
+
+#define htons(x) ( ((x)<< 8 & 0xFF00) | \
+                   ((x)>> 8 & 0x00FF) )
+#define ntohs(x) htons(x)
+
+#define htonl(x) ( ((x)<<24 & 0xFF000000UL) | \
+                   ((x)<< 8 & 0x00FF0000UL) | \
+                   ((x)>> 8 & 0x0000FF00UL) | \
+                   ((x)>>24 & 0x000000FFUL) )
+#define ntohl(x) htonl(x)
 
 // You will need to create an SFE_BMP180 object, here called "pressure":
 SFE_BMP180 pressure;
@@ -75,6 +87,28 @@ byte addresses[][6] = {"1Node","2Node"};
 #define MAX_BUF_SIZE 255
 // Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 9 & 10 
 RF24 radio(9,10);
+
+//Global error codes
+enum ErrorCode
+{
+  NO_ERROR = 1,
+  BMP180_INIT_ERROR = 2,
+};
+
+void fatalError(ErrorCode errorCode)
+{
+  for(;;)
+  {
+    for(unsigned i=0; i < (unsigned)errorCode; i++)
+    {
+      digitalWrite(PORT_ARDUINO_PRO_MINI_LED, HIGH);
+      LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_OFF);
+      digitalWrite(PORT_ARDUINO_PRO_MINI_LED, LOW);
+      LowPower.powerDown(SLEEP_250MS, ADC_OFF, BOD_OFF);
+    }
+    LowPower.powerDown(SLEEP_4S, ADC_OFF, BOD_OFF);
+  }   
+}
 
 void initRadio() {
   // Setup and configure rf radio
@@ -96,16 +130,35 @@ void initSensor() {
     // Oops, something went wrong, this is usually a connection problem,
     // see the comments at the top of this sketch for the proper connections.
     Serial.println("BMP180 init fail\n\n");
-    while(1); // Pause forever.
+    //while(1); // Pause forever.
+    fatalError( BMP180_INIT_ERROR );
   }
 }
-  
+
 void setup()
 {
+  pinMode(PORT_ARDUINO_PRO_MINI_LED, OUTPUT);
   Serial.begin(9600);
-  Serial.println("REBOOT");
+  Serial.println("init begin");
+  Serial.flush();
+  
+  for(unsigned i=0; i < 3; i++)
+  {
+    digitalWrite(PORT_ARDUINO_PRO_MINI_LED, HIGH);
+    LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_OFF);
+    digitalWrite(PORT_ARDUINO_PRO_MINI_LED, LOW);
+    LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_OFF);
+  }
+   LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF);
+
+  Serial.println("init sensor");
+  Serial.flush();
   initSensor();
+  Serial.println("init radio");
+  Serial.flush();
   initRadio();
+  Serial.println("init end");
+  Serial.flush();
 }
 
 void sendValue(unsigned long pressure, unsigned long temperature) {
@@ -128,6 +181,7 @@ void sendValue(unsigned long pressure, unsigned long temperature) {
 
   //ok kommt manchmal auch ohne Gegenseite ?
   Serial.println(ok ? "Successfull acknowledged." : "Acknowldege failed."); 
+  Serial.flush();
   //delay(1000);
 }
   
@@ -232,8 +286,16 @@ void loop()
           
           unsigned long pressureMul_1000 = p0*1000.0+.5;
           sendValue(pressureMul_1000, (T*1000.0) /*todo test for pos and neg values */);
-          
+       
+#ifdef USE_LOW_POWER_LIB 
+          Serial.flush();         
+          for(unsigned i=0; i<(10L*60L)/8; i++)
+          {
+            LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+          }
+#else
           delay(10L * 60L * 1000L);  // Pause for n seconds.
+#endif
         }
         else Serial.println("error retrieving pressure measurement\n");
       }
@@ -242,6 +304,14 @@ void loop()
     else Serial.println("error retrieving temperature measurement\n");
   }
   else Serial.println("error starting temperature measurement\n");
+        
+#ifdef USE_LOW_POWER_LIB 
+          Serial.flush();         
 
-  delay(5000);  // Pause for n seconds.
+          LowPower.powerDown(SLEEP_4S, ADC_OFF, BOD_OFF);
+          LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF);
+#else
+          delay(5000);  // Pause for n seconds.
+#endif
+ 
 }
