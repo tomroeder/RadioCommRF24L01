@@ -11,14 +11,24 @@
 #include <RF24/RF24.h>
 #include <sqlite3.h>
 
+// -- Daemon --
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <syslog.h>
+#include <string.h>
+// --
+
 #define LOAD_SIZE_1_IDX 0
 #define LOAD_SIZE_2_IDX 1
 #define SENSOR_TYPE_IDX 2
 #define SENSOR_ID_IDX   3
 
 #define SENSOR_TYPE_BMP_180_PRESSURE_AND_TEMPERATURE 10
-
-#define SQLITE_FILE_NAME "/home/pi/Data/Rails/blog/db/development.sqlite3"
 
 using namespace std;
 
@@ -36,9 +46,9 @@ static const uint8_t MAX_BUF_SIZE = 255;
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
   int i;
   for(i=0; i<argc; i++){
-    printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    syslog( LOG_NOTICE, "%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
   }
-  printf("\n");
+  syslog( LOG_NOTICE, "\n");
   return 0;
 }
 
@@ -67,7 +77,7 @@ public:
     const int ret = sqlite3_exec(m_db, cmd, callback, 0, &errMsg);
     if ( ret != SQLITE_OK)
     {
-      fprintf(stderr, "SQL error: %s.\n", errMsg);
+      syslog( LOG_NOTICE, "SQL error: %s.\n", errMsg);
       sqlite3_free(errMsg);
     }
     return ret;
@@ -100,13 +110,13 @@ std::string GetCurrentTime()
 
 void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & sqliteDb)
 {
-  printf("Receiced %d bytes from \'BMP 180\' air pressure and temperature sensor.\n", bufSize);
+  syslog( LOG_NOTICE, "Receiced %d bytes from \'BMP 180\' air pressure and temperature sensor.\n", bufSize);
   uint32_t pressure;
   uint32_t temperature;
 
   if (sizeof(pressure)+sizeof(temperature) != bufSize)
   {
-    printf("Data size mismatch.\n");
+    syslog( LOG_NOTICE, "Data size mismatch.\n");
     return;
   }
   memcpy(&pressure, buf, sizeof(pressure));
@@ -115,26 +125,35 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & 
   pressure = ntohl(pressure);
   temperature = ntohl(temperature);
 
-  printf("Received pressure    = %.2f mb.\n", (pressure / 1000.) );
   const float temperatureInCelsius = temperature / 1000.;
-  printf("Received temperature = %.2f °C.\n", temperatureInCelsius );
+  const float pressureIn_mb = pressure / 1000.;
+
+  syslog( LOG_NOTICE, "%s : received temperature = %.2f °C, pressure = %.2f mb.\n", GetCurrentTime().c_str(), temperatureInCelsius, pressureIn_mb );
 
   stringstream ss;
-  ss << "insert into wheathers (timestamp, temperature, pressure) values (\"" << GetCurrentTime()<< "\", " 
-     << temperatureInCelsius 
-     << ", 995.13);";
+  ss << "insert into sensors (timestamp, temperature, pressure) values (\"" 
+     << GetCurrentTime()<< "\", " << temperatureInCelsius << ", " << pressureIn_mb << ");";
   
   sqliteDb.Execute(ss.str().c_str());
 }
 
 int main(int argc, char** argv){
+ 
+  if (argc != 2)
+  {
+    syslog( LOG_NOTICE, "Usage : homesensord sqliteDatabaseFile.\n");
+    return -1;
+  }
 
-  printf("Start sensor data receiver.\n");
+  openlog ( "homesensord", LOG_PID | LOG_CONS| LOG_NDELAY, LOG_USER);
+
+  const char * dbFileName = argv[1];
+  syslog( LOG_NOTICE, "Start sensor data receiver daemon with database %s.", dbFileName);
 
   SQLiteDb sqliteDb;
-  if ( sqliteDb.Open(SQLITE_FILE_NAME) ) 
+  if ( sqliteDb.Open(dbFileName) ) 
   {
-    printf("Error opening database file \"%s\"\n", SQLITE_FILE_NAME);
+    syslog( LOG_NOTICE, "Error opening database file \"%s\".", dbFileName);
     return -1;
   }
 
@@ -165,17 +184,17 @@ int main(int argc, char** argv){
 	const uint8_t size2 = buf[LOAD_SIZE_2_IDX];
 	if (size1!=size2)
 	{
-          printf("Invalid header size %d!=%d.\n", size1, size2);
+          syslog( LOG_NOTICE, "Invalid header size %d!=%d.\n", size1, size2);
 	  break;
 	}
 	else
 	{
-	  printf("Valid header size : Expecting %d bytes package load.\n", size1);
+	  syslog( LOG_NOTICE, "Valid header size : Expecting %d bytes package load.\n", size1);
 	}
 
 
 	const uint8_t sensorType = buf[SENSOR_TYPE_IDX];
-	const uint8_t sensorId = buf[SENSOR_ID_IDX];
+	//const uint8_t sensorId = buf[SENSOR_ID_IDX];//still unused
 
 	static const uint8_t headerSize = 4;
 	const uint8_t sensorDataSize = size1 - headerSize;//4 Byte Headersize
@@ -185,10 +204,14 @@ int main(int argc, char** argv){
 		  parseSensorTypeBmp180Data(&buf[headerSize], sensorDataSize, sqliteDb);
 		  break;
 		default:
-		  printf("Unknown sensor type.\n");
+		  syslog( LOG_NOTICE, "Unknown sensor type.\n");
 		  break;
 	}
 	//delay(100);//nicht besser
+	delay(925); //Delay after payload responded to, minimize RPi CPU time
+    }
+    else
+    {
 	delay(925); //Delay after payload responded to, minimize RPi CPU time
     }
   } // forever loop
