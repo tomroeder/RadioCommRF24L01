@@ -161,7 +161,7 @@ void setup()
   Serial.flush();
 }
 
-void sendValue(unsigned long pressure, unsigned long temperature) {
+void sendValue(unsigned long pressure, /*unsigned*/ long temperature) {
   char buffer[MAX_BUF_SIZE];
   Serial.print("Sending : ");
   Serial.println(pressure);
