@@ -112,7 +112,7 @@ void parseSensorTypeBmp180Data(const uint8_t * buf, uint8_t bufSize, SQLiteDb & 
 {
   syslog( LOG_NOTICE, "Receiced %d bytes from \'BMP 180\' air pressure and temperature sensor.\n", bufSize);
   uint32_t pressure;
-  uint32_t temperature;
+  int32_t temperature;
 
   if (sizeof(pressure)+sizeof(temperature) != bufSize)
   {
